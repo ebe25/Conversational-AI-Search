@@ -1,3 +1,4 @@
+import os
 from openai import OpenAI
 from app.config import OPENAI_API_KEY
 

@@ -1,6 +1,4 @@
-# Configuration files
-config.py
-app/config.py
+
 
 # Ignore path folder and all subdirectories
 path/
