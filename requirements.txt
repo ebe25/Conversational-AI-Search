@@ -1,0 +1,12 @@
+openai
+qdrant-client
+pytesseract
+Pillow
+PyMuPDF
+langchain
+tiktoken
+pymongo
+boto3
+requests
+fastapi
+uvicorn
