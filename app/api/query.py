@@ -1,10 +1,20 @@
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from app.pdf.embedder import get_embedding
 from app.pdf.uploader import client  # QdrantClient instance
 from app.config import QDRANT_COLLECTION
 
 app = FastAPI()
+
+# Add CORS middleware to allow all origins
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 
 class QueryRequest(BaseModel):
     prompt: str

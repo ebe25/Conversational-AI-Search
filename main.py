@@ -4,6 +4,7 @@ from app.trainings.ingest_tps import process_all_trainings
 from app.forms.ingest_forms import process_all_forms
 from app.tasks.ingest_tasks import process_all_tasks
 from app.audits.ingest_audits import process_all_audits
+from app.guides.ingest_guide import process_individual_guides
 
 def main():
     """Process all document types sequentially"""
@@ -15,6 +16,7 @@ def main():
         # ("Tasks", process_all_tasks),
         # ("Audits", process_all_audits),
         ("SOPs", process_all_sops),
+        # ("Guides",process_individual_guides)
     ]
     
     print("🚀 Starting document processing pipeline...")
