@@ -3,12 +3,39 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from app.pdf.embedder import get_embedding
 from app.pdf.uploader import client  # QdrantClient instance
-from app.config import QDRANT_COLLECTION
+from app.config import QDRANT_COLLECTION, OPENAI_API_KEY
+from openai import OpenAI
 from app.db.fetchers import write_chat_record
 import uuid
 from typing import Optional
 from datetime import datetime
 from app.db.mongo import db
+
+openai_client = OpenAI(api_key=OPENAI_API_KEY)
+
+def ask_openai_with_context(prompt, context):
+    system_prompt = (
+        "You are a helpful assistant for Five Iron Golf staff. "
+        "Answer the user's question based STRICTLY on the provided context. "
+        "1. If asked about specific scheduled audits or events, check if the context contains that specific information. If not, explain what information IS available about audits (like audit types, setup process, or forms). "
+        "2. ALWAYS include relevant links/references using angle brackets at the end of sentences where appropriate (e.g., 'You can find the morning checklist here <Morning Audit Checklist>'). "
+        "3. If the context contains only forms/templates but not scheduled events, explain this distinction to the user. "
+        "4. When the exact information isn't available, offer alternative helpful information from the context, such as: 'While I don't see a list of scheduled audits, I can tell you about the audit forms available and how to set up audits.' "
+        "5. NEVER invent or hallucinate information not present in the context. "
+        "6. If relevant, explain how the user might find the specific information they're looking for based on the process information in the context. "
+        "7. Keep your answers conversational, helpful and reference the context appropriately.\n\n"
+        f"Context:\n{context}\n\nQuestion: {prompt}\nAnswer:"
+    )
+
+    response = openai_client.chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": system_prompt},
+        ],
+        max_tokens=512,
+        temperature=0.0,
+    )
+    return response.choices[0].message.content.strip()
 
 
 app = FastAPI()
@@ -47,26 +74,17 @@ def query_vector_db(request: QueryRequest):
         query_vector=query_embedding,
         limit=request.top_k
     )
+        # 4. Extract context
+    context_chunks = [hit.payload.get("text") for hit in results if hit.payload.get("text")]
+    context = "\n".join(context_chunks)
+    response_text = ask_openai_with_context(request.prompt, context)
    
-    # 4. Prepare response data
-    response_data = [
-        {
-            "text": hit.payload.get("text"),
-            "module_type": hit.payload.get("module_type"),
-            "document_id": get_dynamic_id(hit.payload),
-            "createdAt": hit.payload.get("createdAt"),
-            "updatedAt": hit.payload.get("updatedAt"),
-            "entityId": hit.payload.get("entityId"),
-            "score": hit.score
-        }
-        for hit in results
-    ]
 
     # 5. Store chat in MongoDB
     chat_payload = {
         "sessionId": session_id,
         "query": request.prompt,
-        "response": response_data,
+        "response": response_text,
         "createdAt": datetime.utcnow(),
         "updatedAt": datetime.utcnow()
     }
@@ -75,7 +93,7 @@ def query_vector_db(request: QueryRequest):
     # 6. Return response with sessionId
     return {
         "sessionId": session_id,
-        "results": response_data
+        "results": response_text
     }
 
 @app.get("/sessions")
