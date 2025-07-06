@@ -4,6 +4,12 @@ from pydantic import BaseModel
 from app.pdf.embedder import get_embedding
 from app.pdf.uploader import client  # QdrantClient instance
 from app.config import QDRANT_COLLECTION
+from app.db.fetchers import write_chat_record
+import uuid
+from typing import Optional
+from datetime import datetime
+from app.db.mongo import db
+
 
 app = FastAPI()
 
@@ -19,6 +25,8 @@ app.add_middleware(
 class QueryRequest(BaseModel):
     prompt: str
     top_k: int = 3
+    sessionId: Optional[str] = None
+    userId: Optional[str] = None
 
 def get_dynamic_id(payload):
     """Get the appropriate ID field based on module type"""
@@ -28,22 +36,24 @@ def get_dynamic_id(payload):
 
 @app.post("/query")
 def query_vector_db(request: QueryRequest):
-    # 1. Embed the prompt
+    # 1. Handle sessionId
+    session_id = request.sessionId if request.sessionId else str(uuid.uuid4())
+
+    # 2. Embed the prompt
     query_embedding = get_embedding(request.prompt)
-    # 2. Search Qdrant
+    # 3. Search Qdrant
     results = client.search(
         collection_name=QDRANT_COLLECTION, 
         query_vector=query_embedding,
         limit=request.top_k
     )
-    print("results", results)
    
-    # 3. Return the most relevant chunks and their meta
-    return [
+    # 4. Prepare response data
+    response_data = [
         {
             "text": hit.payload.get("text"),
             "module_type": hit.payload.get("module_type"),
-            "document_id": get_dynamic_id(hit.payload),  # Dynamic ID based on type
+            "document_id": get_dynamic_id(hit.payload),
             "createdAt": hit.payload.get("createdAt"),
             "updatedAt": hit.payload.get("updatedAt"),
             "entityId": hit.payload.get("entityId"),
@@ -51,3 +61,50 @@ def query_vector_db(request: QueryRequest):
         }
         for hit in results
     ]
+
+    # 5. Store chat in MongoDB
+    chat_payload = {
+        "sessionId": session_id,
+        "query": request.prompt,
+        "response": response_data,
+        "createdAt": datetime.utcnow(),
+        "updatedAt": datetime.utcnow()
+    }
+    write_chat_record(chat_payload)
+
+    # 6. Return response with sessionId
+    return {
+        "sessionId": session_id,
+        "results": response_data
+    }
+
+@app.get("/sessions")
+def get_sessions():
+    """
+    Aggregate chat records grouped by sessionId.
+    Returns a list of sessions with their queries and responses.
+    """
+    pipeline = [
+        {
+            "$group": {
+                "_id": "$sessionId",
+                "chats": {
+                    "$push": {
+                        "query": "$query",
+                        "response": "$response",
+                        "createdAt": "$createdAt",
+                        "updatedAt": "$updatedAt"
+                    }
+                }
+            }
+        },
+        {
+            "$project": {
+                "sessionId": "$_id",
+                "chats": 1,
+                "_id": 0
+            }
+        }
+    ]
+    sessions = list(db["chatHistorys"].aggregate(pipeline))
+    return {"sessions": sessions}

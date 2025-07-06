@@ -25,3 +25,9 @@ def fetch_all_tasks():
 
 def fetch_all_audits():
     return fetch_documents_by_collection("audits")
+
+def write_chat_record(chat_payload):
+    """Insert a chat record into the chat collection"""
+    collection = db["chatHistorys"]
+    result = collection.insert_one(chat_payload)
+    return str(result.inserted_id)
