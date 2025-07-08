@@ -66,6 +66,8 @@ def query_vector_db(request: QueryRequest):
     # 1. Handle sessionId
     session_id = request.sessionId if request.sessionId else str(uuid.uuid4())
 
+    userId = request.userId if request.userId else "anonymous"
+
     # 2. Embed the prompt
     query_embedding = get_embedding(request.prompt)
     # 3. Search Qdrant
@@ -86,7 +88,8 @@ def query_vector_db(request: QueryRequest):
         "query": request.prompt,
         "response": response_text,
         "createdAt": datetime.utcnow(),
-        "updatedAt": datetime.utcnow()
+        "updatedAt": datetime.utcnow(),
+        "userId": userId,
     }
     write_chat_record(chat_payload)
 
@@ -113,13 +116,15 @@ def get_sessions():
                         "createdAt": "$createdAt",
                         "updatedAt": "$updatedAt"
                     }
-                }
+                },
+                "userId": {"$first": "$userId"}
             }
         },
         {
             "$project": {
                 "sessionId": "$_id",
                 "chats": 1,
+                "userId": 1,
                 "_id": 0
             }
         }
