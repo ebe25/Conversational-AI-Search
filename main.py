@@ -15,8 +15,8 @@ def main():
         # ("Forms", process_all_forms),
         # ("Tasks", process_all_tasks),
         # ("Audits", process_all_audits),
-        ("SOPs", process_all_sops),
-        # ("Guides",process_individual_guides)
+        # ("Guides",process_individual_guides),
+        # ("SOPs", process_all_sops),
     ]
     
     print("🚀 Starting document processing pipeline...")
