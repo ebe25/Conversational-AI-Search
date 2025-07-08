@@ -5,11 +5,12 @@ from app.pdf.embedder import get_embedding
 from app.pdf.uploader import client  # QdrantClient instance
 from app.config import QDRANT_COLLECTION, OPENAI_API_KEY
 from openai import OpenAI
-from app.db.fetchers import write_chat_record
+from app.db.fetchers import write_chat_record, encode_object_id, validate_sop
 import uuid
 from typing import Optional
 from datetime import datetime
 from app.db.mongo import db
+from bson import ObjectId
 
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
@@ -76,7 +77,46 @@ def query_vector_db(request: QueryRequest):
         query_vector=query_embedding,
         limit=request.top_k
     )
-        # 4. Extract context
+
+     # 4. Filter results based on SOP validation
+    filtered_results = []
+    unauthorized_sops = []
+    for hit in results:
+        module_type = hit.payload.get("module_type")
+        document_id = get_dynamic_id(hit.payload)
+        
+        # Only validate SOPs and only if we have a real user
+        if module_type == "sop" and document_id and userId != "anonymous":
+            # Check if the user has access to this SOP
+            if validate_sop(ObjectId(document_id), ObjectId(userId)):
+                filtered_results.append(hit)
+            else:
+                unauthorized_sops.append(document_id)
+        else:
+            # For non-SOPs or anonymous users, include all results
+            filtered_results.append(hit)
+
+    if unauthorized_sops:
+        # User tried to access something they don't have permission for
+        response_text = "You are not authorized to view some of the requested content. Please contact your administrator if you need access."
+        
+        # Store chat in MongoDB
+        chat_payload = {
+            "sessionId": session_id,
+            "query": request.prompt,
+            "response": response_text,
+            "createdAt": datetime.utcnow(),
+            "updatedAt": datetime.utcnow(),
+            "userId": userId,
+        }
+        write_chat_record(chat_payload)
+        
+        # Return unauthorized message
+        return {
+            "sessionId": session_id,
+            "results": response_text,
+        }
+    # 4. Extract context
     context_chunks = [hit.payload.get("text") for hit in results if hit.payload.get("text")]
     context = "\n".join(context_chunks)
     response_text = ask_openai_with_context(request.prompt, context)
