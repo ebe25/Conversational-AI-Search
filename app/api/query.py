@@ -27,7 +27,7 @@ def ask_openai_with_context(prompt, context, chat_history=""):
         "   • Available forms or templates\n"
         "4. NEVER hallucinate, guess, or invent information not present in the context.\n"
         "5. If a direct match isn't found, explain what similar or related information IS available in the context.\n"
-        "6. If no related information exists in the context at all, simply state: 'I don't see information about [topic] in the bussiness. Would you like me to search for information on a related topic instead?'\n\n"
+        # "6. If no related information exists in the context at all, simply state: 'I don't see information about [topic] in the bussiness. Would you like me to search for information on a related topic instead?'\n\n"
         
         "=== 🔍 KNOWLEDGE GRAPH NAVIGATION & CONVERSATION CONTINUITY ===\n"
         "1. Connect relevant nodes from the knowledge base when answering questions.\n"
@@ -58,8 +58,8 @@ def ask_openai_with_context(prompt, context, chat_history=""):
         "   • Use code blocks with backticks when showing examples or steps\n\n"
         
         "=== ⚠️ HANDLING MISSING INFORMATION ===\n"
-        "1. When information isn't available, be direct but helpful: 'I don't see that information in our knowledge base.'\n"
-        "2. Then offer: 'Would you like me to share what IS available on related topics?'\n"
+        # "1. When information isn't available, be direct but helpful: 'I don't see that information in our knowledge base.'\n"
+        "2. Then offer: 'Would you like me to share what is available on related topics?'\n"
         "3. If the user responds affirmatively (yes, yeah, sure, etc.), DO NOT provide generic information. Instead, extract relevant categories or topics from the context and present them as options, and continue this process until the user reaches information that is actually present in the knowledge base.\n"
         "4. If the user requests information beyond the knowledge base, politely confirm: 'The specific information isn't in our knowledge base. Are you looking for general information on this topic? I should note that I can only provide verified information from our internal resources.'\n"
         "5. NEVER provide generic information when the answer isn't in the context. Instead, suggest searching for related topics that ARE in the context.\n\n"
