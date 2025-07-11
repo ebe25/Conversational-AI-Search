@@ -6,6 +6,7 @@ from app.pdf.chunker import langchain_chunk
 from app.pdf.embedder import get_embedding
 from app.pdf.uploader import upload_to_qdrant
 from app.config import QDRANT_COLLECTION
+import networkx as nx
 
 def load_json_files(directory_path):
     """
@@ -150,6 +151,29 @@ def process_and_ingest_guides(directory_path=None):
         
     except Exception as e:
         print(f"❌ Error uploading to Qdrant: {str(e)}")
+    
+    # Build knowledge graph
+    G = nx.DiGraph()
+    input_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../input"))
+    os.makedirs(input_dir, exist_ok=True)
+    previous_chunk_id = None
+    for i, chunk in enumerate(chunks):
+        chunk_node_id = f"guide::merged_chunk_{i}"
+        G.add_node(chunk_node_id, label="Chunk", guide_id=merged_doc['entityId'], text=chunk, order=i)
+        G.add_edge(f"guide::{merged_doc['entityId']}", chunk_node_id, relation="has_step")
+        if previous_chunk_id:
+            G.add_edge(previous_chunk_id, chunk_node_id, relation="next_step")
+        previous_chunk_id = chunk_node_id
+        # Export chunk as .txt file
+        txt_path = os.path.join(input_dir, f"guide_{merged_doc['entityId']}_chunk_{i}.txt")
+        with open(txt_path, "w", encoding="utf-8") as f:
+            f.write(chunk)
+    G.add_node(f"guide::{merged_doc['entityId']}", label="Guide", title=merged_doc.get("title", ""))
+    
+    # Save graph to file
+    graph_path = os.path.join(os.path.dirname(__file__), "../guide_graph.graphml")
+    nx.write_graphml(G, graph_path)
+    print(f"\n🧠 Knowledge graph saved to: {graph_path}")
 
 def process_individual_guides(directory_path=None):
     """
@@ -166,6 +190,10 @@ def process_individual_guides(directory_path=None):
         return
     
     total_chunks = 0
+    
+    G = nx.DiGraph()
+    input_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../input"))
+    os.makedirs(input_dir, exist_ok=True)
     
     for data in json_data:
         print(f"\n📄 Processing: {data['filename']}")
@@ -214,8 +242,26 @@ def process_individual_guides(directory_path=None):
                 print(f"   ✅ Uploaded {len(embedded_chunks)} chunks")
             except Exception as e:
                 print(f"   ❌ Error uploading: {str(e)}")
+        
+        # Build knowledge graph
+        previous_chunk_id = None
+        for i, chunk in enumerate(chunks):
+            chunk_node_id = f"guide::{doc_meta['entityId']}_chunk_{i}"
+            G.add_node(chunk_node_id, label="Chunk", guide_id=doc_meta['entityId'], text=chunk, order=i)
+            G.add_edge(f"guide::{doc_meta['entityId']}", chunk_node_id, relation="has_step")
+            if previous_chunk_id:
+                G.add_edge(previous_chunk_id, chunk_node_id, relation="next_step")
+            previous_chunk_id = chunk_node_id
+            # Export chunk as .txt file
+            txt_path = os.path.join(input_dir, f"guide_{doc_meta['entityId']}_chunk_{i}.txt")
+            with open(txt_path, "w", encoding="utf-8") as f:
+                f.write(chunk)
+        G.add_node(f"guide::{doc_meta['entityId']}", label="Guide", title=doc_meta.get("title", ""))
     
-    print(f"\n🎉 Completed! Total chunks uploaded: {total_chunks}")
+    # Save graph to file
+    graph_path = os.path.join(os.path.dirname(__file__), "../guide_graph.graphml")
+    nx.write_graphml(G, graph_path)
+    print(f"\n🧠 Knowledge graph saved to: {graph_path}")
 
 if __name__ == "__main__":
     # You can choose which approach to use:

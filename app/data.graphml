@@ -1,0 +1,32 @@
+<?xml version='1.0' encoding='utf-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+  <key id="d7" for="edge" attr.name="relation" attr.type="string" />
+  <key id="d6" for="node" attr.name="next_chunk_id" attr.type="double" />
+  <key id="d5" for="node" attr.name="prev_chunk_id" attr.type="double" />
+  <key id="d4" for="node" attr.name="chunk_index" attr.type="long" />
+  <key id="d3" for="node" attr.name="parent_id" attr.type="string" />
+  <key id="d2" for="node" attr.name="metadata" attr.type="string" />
+  <key id="d1" for="node" attr.name="id" attr.type="string" />
+  <key id="d0" for="node" attr.name="text" attr.type="string" />
+  <graph edgedefault="directed">
+    <node id="19b7f2c0-d84d-49d0-8356-91f82f21dc25">
+      <data key="d0">Form Title: Customer Incident Report
+
+Category: Inspection
+
+Status: active
+
+Visibility: private</data>
+      <data key="d1">19b7f2c0-d84d-49d0-8356-91f82f21dc25</data>
+      <data key="d2">{'text': 'Form Title: Customer Incident Report\n\nCategory: Inspection\n\nStatus: active\n\nVisibility: private', 'form_id': '685f063655eecd1c9e5405a5', 'createdAt': datetime.datetime(2025, 6, 27, 20, 59, 34, 850000), 'updatedAt': datetime.datetime(2025, 6, 27, 20, 59, 34, 850000), 'entityId': '67e58254b40e27710ecc0ee3', 'module_type': 'form', 'title': 'Customer Incident Report', 'url': '', 'parent_id': '685f063655eecd1c9e5405a5', 'chunk_index': 0, 'prev_chunk_id': None}</data>
+      <data key="d3">685f063655eecd1c9e5405a5</data>
+      <data key="d4">0</data>
+      <data key="d5">nan</data>
+      <data key="d6">nan</data>
+    </node>
+    <node id="685f063655eecd1c9e5405a5" />
+    <edge source="685f063655eecd1c9e5405a5" target="19b7f2c0-d84d-49d0-8356-91f82f21dc25">
+      <data key="d7">has_step</data>
+    </edge>
+  </graph>
+</graphml>

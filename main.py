@@ -6,12 +6,38 @@ from app.tasks.ingest_tasks import process_all_tasks
 from app.audits.ingest_audits import process_all_audits
 from app.guides.ingest_guide import process_individual_guides
 
+# Use a knowledge graph (KG) to model relationships (clusters, links, entities) between chunks/docs and then query + augment LLM responses using graph reasoning + retrieval.
+'''           ┌─────────────┐
+           │ Ingest Docs │
+           └────┬────────┘
+                ↓
+      ┌────────────────────┐
+      │ Chunking + Embedding│
+      └────┬────────┬──────┘
+           ↓        ↓
+     ┌────────┐   ┌───────────────┐
+     │ Qdrant │   │ Graph Builder │
+     └────────┘   └──────┬────────┘
+                         ↓
+                  ┌─────────────┐
+                  │ Knowledge   │
+                  │    Graph    │
+                  └─────────────┘
+                         ↓
+          ┌────────────────────────────┐
+          │ Hybrid Retrieval (Vec + KG)│
+          └────────────┬───────────────┘
+                       ↓
+               ┌────────────┐
+               │   LLM (RAG)│
+               └────────────┘
+'''
 def main():
     """Process all document types sequentially"""
     
     # Define the processing functions and their names
     processors = [
-        # ("Trainings", process_all_trainings),
+        ("Trainings", process_all_trainings),
         # ("Forms", process_all_forms),
         # ("Tasks", process_all_tasks),
         # ("Audits", process_all_audits),
